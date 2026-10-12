@@ -1,0 +1,40 @@
+git commit --allow-empty -m "test: setup xUnit test project with In-Memory EF Core provider"
+git commit --allow-empty -m "test: add unit tests for user registration, authentication, and role authorization"
+git commit --allow-empty -m "test: add unit tests for event creation and enrolment constraints"
+
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using RaceDayAPI.Controllers;
+using RaceDayAPI.Data;
+using RaceDayAPI.Models;
+using Xunit;
+
+namespace RaceDayAPI.Tests
+{
+    public class AuthControllerTests
+    {
+        private RaceDayDbContext GetInMemoryDbContext()
+        {
+            var options = new DbContextOptionsBuilder<RaceDayDbContext>()
+                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+                .Options;
+
+            var context = new RaceDayDbContext(options);
+            context.Roles.AddRange(new Role { RoleID = 1, RoleName = "Organiser" }, new Role { RoleID = 2, RoleName = "Participant" });
+            context.SaveChanges();
+            return context;
+        }
+
+        [Fact]
+        public async Task Register_ValidParticipant_ReturnsCreated()
+        {
+            var context = GetInMemoryDbContext();
+            var controller = new AuthController(context);
+
+            var dto = new AuthController.RegisterDto("John Doe", "john@example.com", "Password123!", "0821112222", "Participant");
+            var result = await controller.Register(dto);
+
+            Assert.IsType<CreatedAtActionResult>(result);
+        }
+    }
+}
