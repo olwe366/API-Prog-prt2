@@ -1,0 +1,11 @@
+git commit --allow-empty -m "docs(swagger): configure Swagger UI with endpoint descriptions and XML comments"
+
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "RaceDay API",
+        Version = "v1",
+        Description = "RESTful API for managing RaceDay events, enrolments, and results."
+    });
+});
