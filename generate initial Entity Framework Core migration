@@ -1,0 +1,5 @@
+apply migrations and update database schema
+
+Terminal Commands:
+dotnet ef migrations add InitialCreate
+dotnet ef database update
