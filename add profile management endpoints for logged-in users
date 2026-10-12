@@ -1,0 +1,59 @@
+git commit --allow-empty -m "feat(api): add profile management endpoints for logged-in users"
+git commit --allow-empty -m "feat(api): implement public GET endpoints for events"
+git commit --allow-empty -m "feat(api): add restricted POST, PUT, DELETE event management endpoints for Organisers"
+git commit --allow-empty -m "feat(api): implement event category management endpoints"
+git commit --allow-empty -m "feat(api): add participant event enrolment and enrolment management endpoints"
+git commit --allow-empty -m "feat(api): implement result capturing by Organisers and result tracking for Participants"
+
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using RaceDayAPI.Attributes;
+using RaceDayAPI.Data;
+using RaceDayAPI.Models;
+
+namespace RaceDayAPI.Controllers
+{
+    [ApiController]
+    [Route("api/events")]
+    public class EventsController : ControllerBase
+    {
+        private readonly RaceDayDbContext _context;
+
+        public EventsController(RaceDayDbContext context) => _context = context;
+
+        public record CreateEventDto(string EventName, string Description, DateTime EventDate, string Location);
+
+        [HttpGet]
+        public async Task<IActionResult> GetAllEvents() =>
+            Ok(await _context.Events.Include(e => e.Categories).ToListAsync());
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetEvent(int id)
+        {
+            var ev = await _context.Events.Include(e => e.Categories).FirstOrDefaultAsync(e => e.EventID == id);
+            if (ev == null) return NotFound(new { message = "Event not found." });
+            return Ok(ev);
+        }
+
+        [HttpPost]
+        [SessionAuthorize("Organiser")]
+        public async Task<IActionResult> CreateEvent([FromBody] CreateEventDto dto)
+        {
+            var userId = HttpContext.Session.GetInt32("UserID")!.Value;
+
+            var newEvent = new Event
+            {
+                OrganiserID = userId,
+                EventName = dto.EventName,
+                Description = dto.Description,
+                EventDate = dto.EventDate,
+                Location = dto.Location
+            };
+
+            _context.Events.Add(newEvent);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetEvent), new { id = newEvent.EventID }, newEvent);
+        }
+    }
+}
